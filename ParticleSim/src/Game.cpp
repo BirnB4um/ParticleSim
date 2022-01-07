@@ -112,7 +112,7 @@ void Game::init(unsigned int number_of_threads, unsigned int seed)
 	simulation_time_taken = 1000;
 	simulation_time_start = 0;
 	do_extra_pause = false;
-	extra_pause_time = 10000;//10 sec
+	extra_pause_time = 0;//millisec
 
 	//recording
 	recording_fps = 30;
@@ -128,6 +128,7 @@ void Game::init(unsigned int number_of_threads, unsigned int seed)
 	save_and_load_plane.setOutlineColor(sf::Color(160, 160, 160, 255));
 	save_and_load_plane.setOutlineThickness(10);
 	recording_framerate_button = Button(0, 0, 50, 50);
+	recording_extra_pause_slider = Slider(0, 0, 250, 2, 0.0f, 20000.0f, 0.0f);
 
 
 	//save & load menu
@@ -341,6 +342,9 @@ void Game::update_menu_position() {
 	recording_frame_slider.width = normal_view.getSize().x - 2 * dx;
 	recording_frame_slider.rect_shape.setSize(sf::Vector2f(recording_frame_slider.width, 2));
 	recording_frame_slider.set_position(normal_view.getCenter().x - normal_view.getSize().x / 2 + dx, normal_view.getCenter().y + normal_view.getSize().y / 2 - 50);
+
+	//extra pause slider
+	recording_extra_pause_slider.set_position(normal_view.getCenter().x + normal_view.getSize().x / 2 - 300, normal_view.getCenter().y + normal_view.getSize().y / 2 - 30);
 
 
 }
@@ -1147,6 +1151,11 @@ void Game::updateSFMLEvents()
 					lookupTable.randomise_table(rand());
 				}
 
+				//toggle extra pause
+				else if (sfEvent.key.code == sf::Keyboard::D) {
+					do_extra_pause = !do_extra_pause;
+				}
+
 
 				//toggle border
 				else if (sfEvent.key.code == sf::Keyboard::W) {
@@ -1195,9 +1204,7 @@ void Game::updateSFMLEvents()
 			if (sfEvent.key.code == sf::Keyboard::Space) {
 				simulation_paused = !simulation_paused;
 			}
-			else if (sfEvent.key.code == sf::Keyboard::D) {
-				do_extra_pause = !do_extra_pause;
-			}
+			
 
 
 
@@ -1293,7 +1300,7 @@ void Game::updateSFMLEvents()
 					if (save_recording_button.update_mouse_event(mouseX_normal, mouseY_normal, false)) {//save
 						simulation_paused = true;
 						set_recording_status(true);
-						while(window.pollEvent(sfEvent));//clear events -> no direct enter press that stop
+						while (window.pollEvent(sfEvent));//clear events -> no direct enter press that stop
 						return;
 					}
 					if (load_recording_button.update_mouse_event(mouseX_normal, mouseY_normal, false)) {//load
@@ -1308,6 +1315,10 @@ void Game::updateSFMLEvents()
 						return;
 					}
 				}
+
+				if (do_extra_pause)
+					recording_extra_pause_slider.update_mouse_event(mouseX_normal, mouseY_normal, false);
+
 			}
 			else {
 				//slider
@@ -1362,10 +1373,13 @@ void Game::updateSFMLEvents()
 					restart_recording = false;
 				}
 
-
 				//button 
 				close_recording_button.update_mouse_event(mouseX_normal, mouseY_normal, true);
 				recording_framerate_button.update_mouse_event(mouseX_normal, mouseY_normal, true);
+			}
+			else {
+				if (do_extra_pause)
+					recording_extra_pause_slider.update_mouse_event(mouseX_normal, mouseY_normal, true);
 			}
 
 			//if mouse not over menu or save/load mennu
@@ -1507,8 +1521,13 @@ void Game::update()
 			save_recording_button.update(mouseX_normal, mouseY_normal);
 			load_recording_button.update(mouseX_normal, mouseY_normal);
 		}
-
 		update_menu_slider_values();
+
+		if (do_extra_pause) {
+			recording_extra_pause_slider.update(mouseX_normal, mouseY_normal);
+			extra_pause_time = recording_extra_pause_slider.get_value();
+		}
+
 
 		//set grabbed particles to mouse position
 		for (const sf::Vector3f& grabbed_particle : grabbed_particles) {
@@ -1676,6 +1695,7 @@ void Game::render()
 		text.setPosition(normal_view.getCenter().x + normal_view.getSize().x / 2 - 600, 70);
 		text.setCharacterSize(30);
 		window.draw(text);
+
 	}
 
 	//draw user input window
@@ -1891,7 +1911,18 @@ void Game::render()
 			text.setPosition(load_recording_button.pos_x + 10, load_recording_button.pos_y + 10);
 			window.draw(text);
 		}
+		else if (do_extra_pause) {//draw extra pause slider
+			text.setString("extra pause time: " + std::to_string(extra_pause_time / 1000) + "." + std::to_string(int(extra_pause_time / 100) - int(extra_pause_time / 1000) * 10) + " sec");
+			text.setCharacterSize(25);
+			text.setPosition(recording_extra_pause_slider.pos_x - 10, recording_extra_pause_slider.pos_y - 70);
+			window.draw(text);
+
+			window.draw(recording_extra_pause_slider.rect_shape);
+			window.draw(recording_extra_pause_slider.circle_shape);
+		}
 	}
+
+
 
 	//play recording screen
 	if (play_recording && !hide_hud) {

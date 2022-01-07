@@ -103,6 +103,7 @@ private:
 	sf::CircleShape rec_circle;
 	std::string recording_file_path;
 	Button recording_framerate_button;
+	Slider recording_extra_pause_slider;
 
 	//thread stuff
 	bool is_changing_data;

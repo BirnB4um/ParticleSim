@@ -25,6 +25,7 @@ void print_help() {
 	cout << "   Tab: place particles in mouse-circle\n";
 	cout << "   L / Ctrl+S: Save & Load menu\n";
 	cout << "   H: show debug-data (velocity/influence radius)\n";
+	cout << "   D: Do extra pause between frames (to not overheat cpu when simulating many particles)\n";
 
 	cout << "\n       ===== Mouse: =====\n";
 	cout << "   middle mousebutton: drag screen\n";
