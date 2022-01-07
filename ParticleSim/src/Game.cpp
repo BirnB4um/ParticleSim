@@ -419,8 +419,15 @@ void Game::set_recording_status(bool recording) {
 }
 
 bool Game::load_recording() {
+	std::string file_name = io.choose_open_file(2);
+	if (file_name == "")
+		return false;
+
 	std::vector<char> input_data;
-	if (io.read_from_file(io.choose_open_file(2), input_data)) {
+	input_data.reserve(40 * 1024 * 1024);
+
+	if (io.read_from_file(file_name, input_data)) {
+		input_data.shrink_to_fit();
 
 		//test if file is corrupted
 		if (int(input_data[input_data.size() - 1]) != -1) {
@@ -473,6 +480,7 @@ bool Game::load_recording() {
 			std::cout << "Unknown Version: " << version - 0xA0 << std::endl;
 			return false;
 		}
+
 
 	}
 	return false;
