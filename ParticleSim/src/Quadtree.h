@@ -5,8 +5,8 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
-#define MAX_NODE_CAPACITY 40
-#define MAX_NODE_DEPTH 15
+#define MAX_NODE_CAPACITY 30
+#define MAX_NODE_DEPTH 8
 
 class Quadtree
 {

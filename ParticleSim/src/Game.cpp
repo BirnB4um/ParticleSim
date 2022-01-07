@@ -20,8 +20,7 @@ Game::~Game()
 	delete[] loaded_position_data;
 	delete[] loaded_particle_color;
 	delete[] loaded_current_position_data;
-	delete qt_read;
-	delete qt_write;
+	delete qt;
 }
 
 void Game::create_window(bool _fullscreen, int fps)
@@ -55,8 +54,7 @@ void Game::init(unsigned int number_of_threads, unsigned int seed)
 	//general
 	run_game = true;
 	sfEvent = sf::Event();
-	qt_read = new Quadtree(0, 0, SCREEN_WIDTH, 0, SCREEN_HEIGHT);
-	qt_write = new Quadtree(0, 0, SCREEN_WIDTH, 0, SCREEN_HEIGHT);
+	qt = new Quadtree(0, 0, SCREEN_WIDTH, 0, SCREEN_HEIGHT);
 
 	//create window
 	fullscreen = false;//start with windowed window
@@ -114,7 +112,7 @@ void Game::init(unsigned int number_of_threads, unsigned int seed)
 	simulation_time_taken = 1000;
 	simulation_time_start = 0;
 	do_extra_pause = false;
-	extra_pause_time = 100;//0.1 sec
+	extra_pause_time = 10000;//10 sec
 
 	//recording
 	recording_fps = 30;
@@ -654,9 +652,6 @@ float Game::sqrt_fast(const float x)
 	return u.x;
 }
 
-void Game::compute_particle(int index) {
-
-}
 
 //thread functions
 void Game::th_manage_particle_update() {
@@ -681,23 +676,20 @@ void Game::th_manage_particle_update() {
 
 			if (!simulation_paused) {
 
-				//create quadtree
-				for (int i = 0; i < lookupTable.particle_count; i++) {
-					qt_write->insert(i, get_particle_position_X(i), get_particle_position_Y(i));
-				}
 
 				//switch particle buffers
 				float* temp_ptr = particle_buffer;
 				particle_buffer = next_particle_buffer;
 				next_particle_buffer = temp_ptr;
 
-				//switch quadtree pointers
-				Quadtree* t_ptr = qt_read;
-				qt_read = qt_write;
-				qt_write = t_ptr;
+				//create quadtree
+				qt->clear();
+				for (int i = 0; i < lookupTable.particle_count; i++) {
+					qt->insert(i, get_particle_position_X(i), get_particle_position_Y(i));
+				}
 
-				qt_write->clear();
-				//qt_write = new Quadtree(0, 0, SCREEN_WIDTH, 0, SCREEN_HEIGHT);
+
+
 			}
 
 			if (!recording) {
@@ -705,8 +697,7 @@ void Game::th_manage_particle_update() {
 				if (set_new_particle_count || set_new_particle_types_count || load_new_settings) {
 					is_changing_data = true;
 
-					qt_read->clear();
-					qt_write->clear();
+					qt->clear();
 
 					while (!ready_for_data_change) {
 						std::this_thread::sleep_for(std::chrono::milliseconds(50));//20 checks per sec
@@ -790,8 +781,8 @@ void Game::th_manage_particle_update() {
 }
 
 
-void Game::go_through_quadtree(Quadtree &qt, float &min_x, float &max_x, float &min_y, float &max_y,
-	int &i, float &next_vel_x, float &next_vel_y) {
+void Game::go_through_quadtree(Quadtree &qt, const float &min_x, const float &max_x, const float &min_y, const float &max_y,
+	const int &i, float &next_vel_x, float &next_vel_y) {
 
 	if (qt.contains_rect(min_x, max_x, min_y, max_y)) {
 
@@ -827,6 +818,16 @@ void Game::go_through_quadtree(Quadtree &qt, float &min_x, float &max_x, float &
 			go_through_quadtree( *(qt.subnodes[2]), min_x, max_x, min_y, max_y, i, next_vel_x, next_vel_y);
 			go_through_quadtree( *(qt.subnodes[3]), min_x, max_x, min_y, max_y, i, next_vel_x, next_vel_y);
 		}
+	}
+}
+
+void check(Quadtree& qt, int &size) {
+	size += qt.index_list.size();
+	if (qt.subnodes[0] != nullptr) {
+		check(*qt.subnodes[0], size);
+		check(*qt.subnodes[1], size);
+		check(*qt.subnodes[2], size);
+		check(*qt.subnodes[3], size);
 	}
 }
 
@@ -881,8 +882,10 @@ void Game::th_compute_particles(int thread_index) {
 			influence_rect_max_y = get_particle_position_Y(i) + lookupTable.max_influence_radius;
 
 			//go through quadtree
-			go_through_quadtree(*qt_read, influence_rect_min_x, influence_rect_max_x, influence_rect_min_y, influence_rect_max_y, i, next_vel_x, next_vel_y);
-
+			go_through_quadtree(*qt, influence_rect_min_x, influence_rect_max_x, influence_rect_min_y, influence_rect_max_y, i, next_vel_x, next_vel_y);
+			//int size = 0;
+			//check(*qt_read, size);
+			//std::cout << size << std::endl;
 
 			//for (int n = 0; n < lookupTable.particle_count; n++) {
 			//	if (i != n) {//if these particles are not the same
@@ -1185,7 +1188,7 @@ void Game::updateSFMLEvents()
 				simulation_paused = !simulation_paused;
 			}
 			else if (sfEvent.key.code == sf::Keyboard::D) {
-				draw_quadtree = !draw_quadtree;
+				do_extra_pause = !do_extra_pause;
 			}
 
 
@@ -1611,11 +1614,6 @@ void Game::render()
 			window.draw(circle);
 		}
 
-
-		//draw quadtree
-		if (draw_quadtree) {
-			qt_read->draw(window);
-		}
 
 
 	}

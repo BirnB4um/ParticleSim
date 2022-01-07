@@ -34,9 +34,7 @@ private:
 	float dt;
 	int focused_particle_index;
 	bool hide_hud = false;
-	bool draw_quadtree = false;
-	Quadtree* qt_read;
-	Quadtree* qt_write;
+	Quadtree* qt;
 
 	
 	//rendering stuff
@@ -193,8 +191,7 @@ private:
 
 	//simulation
 	void update_menu_slider_values();
-	void compute_particle(int index);
-	void go_through_quadtree(Quadtree& qt, float& min_x, float& max_x, float& min_y, float& max_y, int& i, float& next_vel_x, float& next_vel_y);
+	void go_through_quadtree(Quadtree& qt, const float& min_x, const float& max_x, const float& min_y, const float& max_y, const int& i, float& next_vel_x, float& next_vel_y);
 
 	//settings
 	bool save_settings_to_file();

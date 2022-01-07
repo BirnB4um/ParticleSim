@@ -41,10 +41,10 @@ void Quadtree::split() {
 	float mid_x = min_x + (max_x - min_x) / 2;
 	float mid_y = min_y + (max_y - min_y) / 2;
 
-	subnodes[0] = std::make_unique<Quadtree>(m_level+1, min_x, mid_x, min_y, mid_y);//NW
-	subnodes[1] = std::make_unique<Quadtree>(m_level+1, mid_x, max_x, min_y, mid_y);//NO
-	subnodes[2] = std::make_unique<Quadtree>(m_level+1, min_x, mid_x, mid_y, max_y);//SW
-	subnodes[3] = std::make_unique<Quadtree>(m_level+1, mid_x, max_x, mid_y, max_y);//SO
+	subnodes[0] = std::make_unique<Quadtree>(m_level+1, min_x, mid_x, min_y, mid_y);
+	subnodes[1] = std::make_unique<Quadtree>(m_level+1, mid_x, max_x, min_y, mid_y);
+	subnodes[2] = std::make_unique<Quadtree>(m_level+1, min_x, mid_x, mid_y, max_y);
+	subnodes[3] = std::make_unique<Quadtree>(m_level+1, mid_x, max_x, mid_y, max_y);
 }
 
 bool Quadtree::contains_point(float x, float y) {
@@ -52,7 +52,7 @@ bool Quadtree::contains_point(float x, float y) {
 }
 
 bool Quadtree::contains_rect(float rect_min_x, float rect_max_x, float rect_min_y, float rect_max_y) {
-	return ( (rect_min_x >= min_x && rect_min_x <= max_x) || (rect_max_x >= min_x && rect_max_x <= max_x)) && ((rect_min_y >= min_y && rect_min_y <= max_y) || (rect_max_y >= min_y && rect_max_y <= max_y) );
+	return rect_min_x <= max_x && rect_max_x >= min_x && rect_min_y <= max_y && rect_max_y >= min_y;
 }
 
 void Quadtree::clear() {
